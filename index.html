@@ -183,7 +183,7 @@
             if (!start || !end || startDate >= endDate) { msg.classList.remove('hidden'); return; }
             msg.classList.add('hidden'); isTimeSelected = true;
             document.getElementById('list-title').innerText = "Trạng thái các xe trong thời gian bạn chọn";
-            window.renderCars(cars, true);
+            window.renderCars(dynamicCars, true);
         }
 
         window.openModal = function(carId) {
@@ -191,7 +191,7 @@
                 alert("Vui lòng chọn Thời gian nhận và trả xe trước!");
                 window.scrollTo({ top: 0, behavior: 'smooth' }); return;
             }
-            pendingCarSelection = cars.find(c => c.id === carId);
+            pendingCarSelection = dynamicCars.find(c => c.id === carId);
             document.getElementById('modal-car-name').innerText = `Xe đã chọn: ${pendingCarSelection.name}`;
             document.getElementById('booking-modal').classList.remove('hidden');
         }
@@ -250,7 +250,7 @@
             }
         }
 
-        window.renderCars(cars, false); 
+        window.renderCars(dynamicCars, false); 
     </script>
 </body>
 </html>
