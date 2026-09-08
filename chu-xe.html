@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chủ Xe - Quản Lý Lịch</title>
+    <title>Chủ Xe - Quản Lý Xe & Lịch</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-blue-50 min-h-screen">
-
     <nav class="bg-gray-800 text-white p-4 shadow-md flex justify-between items-center mb-6">
         <div class="font-bold text-xl">🚗 Hệ Thống Chủ Xe</div>
         <div class="flex gap-2">
@@ -17,159 +16,142 @@
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 pb-12">
-        <h1 class="text-3xl font-bold text-blue-900 mb-6">Trang Dành Cho Chủ Xe</h1>
+        <h1 class="text-3xl font-bold text-blue-900 mb-6">Trang Quản Lý Dành Cho Chủ Xe</h1>
         
-        <div class="bg-white p-4 rounded shadow mb-6 flex gap-4">
-            <input type="text" id="ownerIdInput" placeholder="Nhập ID Chủ Xe (VD: 1 hoặc 2)" class="border p-2 rounded w-64 focus:ring-2 focus:ring-blue-400">
+        <!-- KHU VỰC ĐĂNG NHẬP ID -->
+        <div class="bg-white p-4 rounded shadow mb-6 flex gap-4" id="login-section">
+            <input type="text" id="ownerIdInput" placeholder="Nhập ID (SĐT của bạn)" class="border p-2 rounded w-64 focus:ring-2 focus:ring-blue-400">
             <button onclick="window.loginOwner()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Đăng nhập</button>
         </div>
 
-        <div class="bg-white rounded-lg shadow overflow-x-auto hidden" id="owner-dashboard">
-            <table class="min-w-full bg-white text-sm">
-                <thead class="bg-blue-800 text-white">
-                    <tr>
-                        <th class="py-3 px-4 text-left">Xe & Khách</th>
-                        <th class="py-3 px-4 text-left">Lịch trình & Địa điểm</th>
-                        <th class="py-3 px-4 text-left">Tổng Tiền</th>
-                        <th class="py-3 px-4 text-left">Trạng Thái</th>
-                        <th class="py-3 px-4 text-center">Hành Động</th>
-                    </tr>
-                </thead>
-                <tbody id="owner-table-body"></tbody>
-            </table>
+        <div id="owner-workspace" class="hidden">
+            <!-- KHU VỰC ĐĂNG XE MỚI -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8 border-t-4 border-green-500">
+                <h2 class="text-xl font-bold mb-4 text-green-700">Thêm xe mới vào hệ thống</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input type="text" id="newCarName" placeholder="Tên xe (VD: Mazda 3 2023)" class="border p-2 rounded">
+                    <input type="number" id="newCarPrice" placeholder="Giá thuê 1 ngày (VNĐ)" class="border p-2 rounded">
+                    <input type="text" id="newCarImage" placeholder="Link ảnh xe (URL)" class="border p-2 rounded">
+                </div>
+                <button onclick="window.addCar()" class="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700">Đăng Xe Lên Mạng</button>
+            </div>
+
+            <!-- BẢNG ĐƠN HÀNG ĐẶT XE -->
+            <h2 class="text-xl font-bold mb-4 text-blue-800">Lịch Khách Đặt Xe Của Bạn</h2>
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="min-w-full bg-white text-sm">
+                    <thead class="bg-blue-800 text-white">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Xe & Khách</th>
+                            <th class="py-3 px-4 text-left">Lịch trình & Địa điểm</th>
+                            <th class="py-3 px-4 text-left">Tổng Tiền</th>
+                            <th class="py-3 px-4 text-left">Trạng Thái</th>
+                            <th class="py-3 px-4 text-center">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="owner-table-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+        // DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY
         const firebaseConfig = {
             apiKey: "AIzaSyBIVpGGE6zKxKkT6R7SUdgB5TLA9Dtfdlk",
             authDomain: "thuexetulai-fcd79.firebaseapp.com",
             projectId: "thuexetulai-fcd79",
             storageBucket: "thuexetulai-fcd79.firebasestorage.app",
             messagingSenderId: "984655156691",
-            appId: "1:984655156691:web:ff57df0de4f5f2ee040b26",
-            measurementId: "G-Q4RFFJ76NT"
+            appId: "1:984655156691:web:ff57df0de4f5f2ee040b26"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let globalBookings = [];
-        let currentOwnerCarId = null;
+        let myCars = [];
+        let currentOwnerId = null;
 
-        const cars = [
-            { id: 1, name: "VinFast VF 5 Plus", price: 700000 },
-            { id: 2, name: "Toyota Vios 2022", price: 600000 },
-            { id: 3, name: "Mazda 3 2023", price: 800000 }
-        ];
-
-        // LẮNG NGHE SỰ KIỆN THEO THỜI GIAN THỰC TỪ FIREBASE
+        // Lắng nghe dữ liệu Lịch đặt xe
         onSnapshot(collection(db, "bookings"), (snapshot) => {
             globalBookings = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
-            // Sắp xếp đơn hàng mới nhất lên đầu
-            globalBookings.sort((a, b) => b.timestamp - a.timestamp);
-            if (currentOwnerCarId) window.renderOwnerTable();
+            if (currentOwnerId) window.renderOwnerTable();
         });
 
-        function formatDateTime(dateString) {
-            const d = new Date(dateString);
-            const hh = String(d.getHours()).padStart(2, '0');
-            const mm = String(d.getMinutes()).padStart(2, '0');
-            const DD = String(d.getDate()).padStart(2, '0');
-            const MM = String(d.getMonth() + 1).padStart(2, '0');
-            return `${hh}:${mm} ${DD}/${MM}/${d.getFullYear()}`;
-        }
-
-        function calculateRentalDays(startStr, endStr) {
-            const start = new Date(startStr); const end = new Date(endStr);
-            let totalDays = 0;
-            let currentDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-            let endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-
-            while (currentDay <= endDay) {
-                let b1Start = new Date(currentDay); b1Start.setHours(6, 0, 0, 0);
-                let b1End = new Date(currentDay); b1End.setHours(15, 0, 0, 0);
-                let b2Start = new Date(currentDay); b2Start.setHours(15, 0, 0, 0);
-                let b2End = new Date(currentDay); b2End.setHours(21, 30, 0, 0);
-                if (start < b1End && end > b1Start) totalDays += 0.5;
-                if (start < b2End && end > b2Start) totalDays += 0.5;
-                currentDay.setDate(currentDay.getDate() + 1);
-            }
-            return totalDays;
-        }
+        // Lắng nghe dữ liệu Danh sách xe
+        onSnapshot(collection(db, "cars"), (snapshot) => {
+            myCars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        });
 
         window.loginOwner = function() {
-            const inputId = parseInt(document.getElementById('ownerIdInput').value);
-            if(cars.find(c => c.id === inputId)) {
-                currentOwnerCarId = inputId;
-                document.getElementById('owner-dashboard').classList.remove('hidden');
+            const inputId = document.getElementById('ownerIdInput').value.trim();
+            if(inputId !== "") {
+                currentOwnerId = inputId;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('owner-workspace').classList.remove('hidden');
                 window.renderOwnerTable();
-            } else alert("Sai ID Xe!");
+                alert(`Đăng nhập thành công với ID: ${currentOwnerId}`);
+            } else {
+                alert("Vui lòng nhập ID hợp lệ!");
+            }
+        }
+
+        window.addCar = async function() {
+            const name = document.getElementById('newCarName').value.trim();
+            const price = parseInt(document.getElementById('newCarPrice').value);
+            const image = document.getElementById('newCarImage').value.trim();
+
+            if(!name || !price || !image) {
+                alert("Vui lòng điền đủ thông tin xe!"); return;
+            }
+
+            try {
+                await addDoc(collection(db, "cars"), {
+                    ownerId: currentOwnerId,
+                    name: name,
+                    price: price,
+                    image: image
+                });
+                alert("Đăng xe thành công! Khách hàng đã có thể nhìn thấy xe của bạn.");
+                document.getElementById('newCarName').value = '';
+                document.getElementById('newCarPrice').value = '';
+                document.getElementById('newCarImage').value = '';
+            } catch (error) {
+                console.error("Lỗi đăng xe:", error);
+            }
         }
 
         window.renderOwnerTable = function() {
-            if(!currentOwnerCarId) return;
-            const ownerBookings = globalBookings.filter(b => b.carId === currentOwnerCarId);
+            if(!currentOwnerId) return;
+            // Chỉ lọc các đơn đặt xe thuộc về những xe do ID này sở hữu
+            const myCarIds = myCars.filter(c => c.ownerId === currentOwnerId).map(c => c.id);
+            const ownerBookings = globalBookings.filter(b => myCarIds.includes(b.carId));
+            
             const tbody = document.getElementById('owner-table-body'); tbody.innerHTML = ''; 
-
             ownerBookings.forEach(b => {
                 const isConfirmed = b.status === 'Đã xác nhận' || b.status === 'Đã thu hồi';
                 const phoneDisplay = isConfirmed ? `<span class="text-gray-600">${b.phone}</span>` : `<span class="text-gray-400 italic">*** Chờ cọc ***</span>`;
-                const customerDisplay = `<span class="text-green-600 font-bold">${b.customerName}</span><br>${phoneDisplay}`;
-                const delAdd = b.deliveryAddress ? b.deliveryAddress : 'Báo sau';
-                const retAdd = b.returnAddress ? b.returnAddress : 'Báo sau';
-                const addressDisplay = `<span class="text-gray-600">Giao: ${delAdd}</span><br><span class="text-gray-600">Trả: ${retAdd}</span>`;
-                const rentalDays = calculateRentalDays(b.startTime, b.endTime); 
-                
                 let btn = '';
-                // GỬI ID FIREBASE (b.firebaseId) THAY VÌ ID CŨ
                 if (b.status === 'Chờ chủ xe duyệt') btn = `<button onclick="window.ownerApprove('${b.firebaseId}')" class="bg-blue-500 text-white px-3 py-1 rounded w-full font-bold">Duyệt cho thuê</button>`;
-                else if (b.status === 'Đã xác nhận') btn = `<button onclick="window.updateEndTime('${b.firebaseId}')" class="bg-yellow-500 text-white px-2 py-1 rounded mb-1 w-full font-semibold">Sửa lịch</button><button onclick="window.finishBooking('${b.firebaseId}')" class="bg-gray-600 text-white px-2 py-1 rounded w-full font-semibold">Thu hồi xe</button>`;
                 else btn = `<span class="text-gray-500 text-sm">Đã thao tác</span>`;
 
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="py-3 px-4"><span class="font-bold text-blue-900">${b.carName}</span><br>${customerDisplay}</td>
-                        <td class="py-3 px-4"><span class="font-bold text-gray-800">Lấy: ${formatDateTime(b.startTime)}</span><br><span class="font-bold text-red-600">Trả: ${formatDateTime(b.endTime)}</span><br><span class="text-indigo-600 font-bold">Số ngày: ${rentalDays}</span><br>${addressDisplay}</td>
+                    <tr class="border-b">
+                        <td class="py-3 px-4"><span class="font-bold text-blue-900">${b.carName}</span><br>${b.customerName}<br>${phoneDisplay}</td>
+                        <td class="py-3 px-4">${b.startTime} - ${b.endTime}</td>
                         <td class="py-3 px-4 font-bold text-red-500">${b.totalCost.toLocaleString()}đ</td>
-                        <td class="py-3 px-4"><span class="bg-gray-200 px-2 py-1 rounded text-xs font-semibold">${b.status}</span></td>
+                        <td class="py-3 px-4">${b.status}</td>
                         <td class="py-3 px-4 text-center">${btn}</td>
                     </tr>`;
             });
         }
 
-        // CẬP NHẬT TRẠNG THÁI LÊN FIREBASE
         window.ownerApprove = async function(firebaseId) {
-            try {
-                await updateDoc(doc(db, "bookings", firebaseId), { status: 'Đợi cọc' });
-                alert("Đã duyệt! Bảng quản lý sẽ tự động cập nhật.");
-            } catch (error) { console.error("Lỗi:", error); }
-        }
-
-        window.updateEndTime = async function(firebaseId) {
-            const b = globalBookings.find(x => x.firebaseId === firebaseId);
-            const newTime = prompt("Nhập Thời gian trả xe MỚI (YYYY/MM/DD HH:mm):", b.endTime);
-            if(newTime && !isNaN(new Date(newTime).getTime())) {
-                const newTotalCost = calculateRentalDays(b.startTime, newTime) * cars.find(c => c.id === b.carId).price;
-                try {
-                    await updateDoc(doc(db, "bookings", firebaseId), { 
-                        endTime: newTime,
-                        totalCost: newTotalCost
-                    });
-                    alert("Đã cập nhật lại lịch và tiền thành công!");
-                } catch (error) { console.error("Lỗi:", error); }
-            }
-        }
-
-        window.finishBooking = async function(firebaseId) {
-            if(confirm("Xác nhận khách đã trả xe và hoàn tất đơn?")) {
-                try {
-                    await updateDoc(doc(db, "bookings", firebaseId), { status: 'Đã thu hồi' });
-                } catch (error) { console.error("Lỗi:", error); }
-            }
+            await updateDoc(doc(db, "bookings", firebaseId), { status: 'Đợi cọc' });
         }
     </script>
 </body>
