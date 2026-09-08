@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chủ Xe - Quản Lý Lịch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 min-h-screen">
+
+    <!-- THANH ĐIỀU HƯỚNG PHÂN CẤP (CHỦ XE & KHÁCH HÀNG) -->
+    <nav class="bg-gray-800 text-white p-4 shadow-md flex justify-between items-center mb-6">
+        <div class="font-bold text-xl">🚗 Hệ Thống Chủ Xe</div>
+        <div class="flex gap-2">
+            <a href="chu-xe.html" class="px-4 py-2 bg-green-600 rounded font-bold hover:bg-green-500">Chủ Xe</a>
+            <a href="index.html" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Khách Hàng</a>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 pb-12">
+        <h1 class="text-3xl font-bold text-blue-900 mb-6">Trang Dành Cho Chủ Xe</h1>
+        
+        <div class="bg-white p-4 rounded shadow mb-6 flex gap-4">
+            <input type="text" id="ownerIdInput" placeholder="Nhập ID Chủ Xe (VD: 1 hoặc 2)" class="border p-2 rounded w-64 focus:ring-2 focus:ring-blue-400">
+            <button onclick="loginOwner()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Đăng nhập</button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow overflow-x-auto hidden" id="owner-dashboard">
+            <table class="min-w-full bg-white text-sm">
+                <thead class="bg-blue-800 text-white">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Xe & Khách</th>
+                        <th class="py-3 px-4 text-left">Lịch trình & Địa điểm</th>
+                        <th class="py-3 px-4 text-left">Tổng Tiền</th>
+                        <th class="py-3 px-4 text-left">Trạng Thái</th>
+                        <th class="py-3 px-4 text-center">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="owner-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentOwnerCarId = null;
+
+        const cars = [
+            { id: 1, name: "VinFast VF 5 Plus", price: 700000 },
+            { id: 2, name: "Toyota Vios 2022", price: 600000 },
+            { id: 3, name: "Mazda 3 2023", price: 800000 }
+        ];
+
+        if (!localStorage.getItem('bookings')) localStorage.setItem('bookings', JSON.stringify([]));
+
+        function formatDateTime(dateString) {
+            const d = new Date(dateString);
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const DD = String(d.getDate()).padStart(2, '0');
+            const MM = String(d.getMonth() + 1).padStart(2, '0');
+            return `${hh}:${mm} ${DD}/${MM}/${d.getFullYear()}`;
+        }
+
+        function calculateRentalDays(startStr, endStr) {
+            const start = new Date(startStr); const end = new Date(endStr);
+            let totalDays = 0;
+            let currentDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            let endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+            while (currentDay <= endDay) {
+                let b1Start = new Date(currentDay); b1Start.setHours(6, 0, 0, 0);
+                let b1End = new Date(currentDay); b1End.setHours(15, 0, 0, 0);
+                let b2Start = new Date(currentDay); b2Start.setHours(15, 0, 0, 0);
+                let b2End = new Date(currentDay); b2End.setHours(21, 30, 0, 0);
+                if (start < b1End && end > b1Start) totalDays += 0.5;
+                if (start < b2End && end > b2Start) totalDays += 0.5;
+                currentDay.setDate(currentDay.getDate() + 1);
+            }
+            return totalDays;
+        }
+
+        function loginOwner() {
+            const inputId = parseInt(document.getElementById('ownerIdInput').value);
+            if(cars.find(c => c.id === inputId)) {
+                currentOwnerCarId = inputId;
+                document.getElementById('owner-dashboard').classList.remove('hidden');
+                renderOwnerTable();
+            } else alert("Sai ID Xe!");
+        }
+
+        function renderOwnerTable() {
+            if(!currentOwnerCarId) return;
+            const bookings = JSON.parse(localStorage.getItem('bookings')).filter(b => b.carId === currentOwnerCarId);
+            const tbody = document.getElementById('owner-table-body'); tbody.innerHTML = ''; 
+
+            bookings.reverse().forEach(b => {
+                const isConfirmed = b.status === 'Đã xác nhận' || b.status === 'Đã thu hồi';
+                const phoneDisplay = isConfirmed ? `<span class="text-gray-600">${b.phone}</span>` : `<span class="text-gray-400 italic">*** Chờ cọc ***</span>`;
+                const customerDisplay = `<span class="text-green-600 font-bold">${b.customerName}</span><br>${phoneDisplay}`;
+                const delAdd = b.deliveryAddress ? b.deliveryAddress : 'Báo sau';
+                const retAdd = b.returnAddress ? b.returnAddress : 'Báo sau';
+                const addressDisplay = `<span class="text-gray-600">Giao: ${delAdd}</span><br><span class="text-gray-600">Trả: ${retAdd}</span>`;
+                const rentalDays = calculateRentalDays(b.startTime, b.endTime); 
+                
+                let btn = '';
+                if (b.status === 'Chờ chủ xe duyệt') btn = `<button onclick="ownerApprove('${b.id}')" class="bg-blue-500 text-white px-3 py-1 rounded w-full font-bold">Duyệt cho thuê</button>`;
+                else if (b.status === 'Đã xác nhận') btn = `<button onclick="updateEndTime('${b.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded mb-1 w-full font-semibold">Sửa lịch</button><button onclick="finishBooking('${b.id}')" class="bg-gray-600 text-white px-2 py-1 rounded w-full font-semibold">Thu hồi xe</button>`;
+                else btn = `<span class="text-gray-500 text-sm">Đã thao tác</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 px-4"><span class="font-bold text-blue-900">${b.carName}</span><br>${customerDisplay}</td>
+                        <td class="py-3 px-4"><span class="font-bold text-gray-800">Lấy: ${formatDateTime(b.startTime)}</span><br><span class="font-bold text-red-600">Trả: ${formatDateTime(b.endTime)}</span><br><span class="text-indigo-600 font-bold">Số ngày: ${rentalDays}</span><br>${addressDisplay}</td>
+                        <td class="py-3 px-4 font-bold text-red-500">${b.totalCost.toLocaleString()}đ</td>
+                        <td class="py-3 px-4"><span class="bg-gray-200 px-2 py-1 rounded text-xs font-semibold">${b.status}</span></td>
+                        <td class="py-3 px-4 text-center">${btn}</td>
+                    </tr>`;
+            });
+        }
+
+        function ownerApprove(id) {
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            bookings.find(b => b.id === id).status = 'Đợi cọc'; 
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+            renderOwnerTable(); alert("Đã duyệt! Hệ thống khóa lịch xe này và chờ Quản lý thu cọc.");
+        }
+
+        function updateEndTime(id) {
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            const b = bookings.find(x => x.id === id);
+            const newTime = prompt("Nhập Thời gian trả xe MỚI (YYYY/MM/DD HH:mm):", b.endTime);
+            if(newTime && !isNaN(new Date(newTime).getTime())) {
+                b.endTime = newTime;
+                b.totalCost = calculateRentalDays(b.startTime, newTime) * cars.find(c => c.id === b.carId).price;
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                renderOwnerTable(); alert("Đã cập nhật lại lịch và tiền thành công!");
+            }
+        }
+
+        function finishBooking(id) {
+            if(confirm("Xác nhận khách đã trả xe và hoàn tất đơn?")) {
+                const bookings = JSON.parse(localStorage.getItem('bookings'));
+                bookings.find(b => b.id === id).status = 'Đã thu hồi';
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                renderOwnerTable();
+            }
+        }
+    </script>
+</body>
+</html>
