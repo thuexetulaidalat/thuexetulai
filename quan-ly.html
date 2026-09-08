@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Tổng - Lịch & Thu Cọc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- THANH ĐIỀU HƯỚNG QUẢN LÝ (CẤP CAO NHẤT: ĐỦ 3 NÚT) -->
+    <nav class="bg-gray-800 text-white p-4 shadow-md flex justify-between items-center mb-6">
+        <div class="font-bold text-xl">🚗 Hệ Thống Quản Trị</div>
+        <div class="flex gap-2">
+            <a href="quan-ly.html" class="px-4 py-2 bg-purple-600 rounded font-bold hover:bg-purple-500">Quản Lý</a>
+            <a href="chu-xe.html" class="px-4 py-2 bg-green-600 rounded hover:bg-green-500">Chủ Xe</a>
+            <a href="index.html" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Khách Hàng</a>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 pb-12">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Quản Lý Lịch & Thu Cọc</h1>
+        
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+            <table class="min-w-full bg-white text-sm">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Xe & Khách</th>
+                        <th class="py-3 px-4 text-left">Lịch trình & Địa điểm</th>
+                        <th class="py-3 px-4 text-left">Tổng Tiền</th>
+                        <th class="py-3 px-4 text-left">Trạng Thái</th>
+                        <th class="py-3 px-4 text-center">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="manager-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const DEPOSIT_AMOUNT = 200000; 
+
+        const cars = [
+            { id: 1, name: "VinFast VF 5 Plus", price: 700000 },
+            { id: 2, name: "Toyota Vios 2022", price: 600000 },
+            { id: 3, name: "Mazda 3 2023", price: 800000 }
+        ];
+
+        if (!localStorage.getItem('bookings')) localStorage.setItem('bookings', JSON.stringify([]));
+
+        function formatDateTime(dateString) {
+            const d = new Date(dateString);
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const DD = String(d.getDate()).padStart(2, '0');
+            const MM = String(d.getMonth() + 1).padStart(2, '0');
+            return `${hh}:${mm} ${DD}/${MM}/${d.getFullYear()}`;
+        }
+
+        function calculateRentalDays(startStr, endStr) {
+            const start = new Date(startStr); const end = new Date(endStr);
+            let totalDays = 0;
+            let currentDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            let endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+            while (currentDay <= endDay) {
+                let b1Start = new Date(currentDay); b1Start.setHours(6, 0, 0, 0);
+                let b1End = new Date(currentDay); b1End.setHours(15, 0, 0, 0);
+                let b2Start = new Date(currentDay); b2Start.setHours(15, 0, 0, 0);
+                let b2End = new Date(currentDay); b2End.setHours(21, 30, 0, 0);
+                if (start < b1End && end > b1Start) totalDays += 0.5;
+                if (start < b2End && end > b2Start) totalDays += 0.5;
+                currentDay.setDate(currentDay.getDate() + 1);
+            }
+            return totalDays;
+        }
+
+        function renderManagerTable() {
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            const tbody = document.getElementById('manager-table-body'); tbody.innerHTML = '';
+
+            bookings.reverse().forEach(b => {
+                const rentalDays = calculateRentalDays(b.startTime, b.endTime);
+                const delAdd = b.deliveryAddress ? b.deliveryAddress : 'Báo sau';
+                const retAdd = b.returnAddress ? b.returnAddress : 'Báo sau';
+
+                let btn = '';
+                if (b.status === 'Chờ chủ xe duyệt') btn = '<span class="text-gray-500 text-sm italic">Đợi chủ xe...</span>';
+                else if (b.status === 'Đợi cọc') btn = `<button onclick="confirmDeposit('${b.id}')" class="bg-green-500 text-white px-3 py-1 rounded w-full text-sm font-bold hover:bg-green-600">Thu cọc ${DEPOSIT_AMOUNT.toLocaleString()}đ</button>`;
+                else if (b.status === 'Đã xác nhận') btn = `<button onclick="updateEndTime('${b.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-semibold">Sửa lịch</button><button onclick="finishBooking('${b.id}')" class="bg-gray-600 text-white px-2 py-1 rounded w-full text-sm font-semibold">Thu hồi xe</button>`;
+                else btn = '<span class="text-gray-400 text-sm">Đã xong</span>';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2 px-4"><span class="font-bold text-blue-900">${b.carName}</span><br><span class="text-green-600 font-bold">${b.customerName}</span><br><span class="text-gray-600">${b.phone}</span></td>
+                        <td class="py-2 px-4"><span class="font-bold text-gray-800">Lấy: ${formatDateTime(b.startTime)}</span><br><span class="font-bold text-red-600">Trả: ${formatDateTime(b.endTime)}</span><br><span class="text-indigo-600 font-bold">Số ngày: ${rentalDays}</span><br><span class="text-gray-600">Giao: ${delAdd}</span><br><span class="text-gray-600">Trả: ${retAdd}</span></td>
+                        <td class="py-2 px-4"><span class="font-bold text-red-500">${b.totalCost.toLocaleString()}đ</span><br>${b.status === 'Đã xác nhận' ? `<span class="text-xs text-gray-500">Đã cọc: ${DEPOSIT_AMOUNT/1000}k / Còn: ${(b.totalCost - DEPOSIT_AMOUNT).toLocaleString()}đ</span>` : ''}</td>
+                        <td class="py-2 px-4"><span class="bg-gray-100 border px-2 py-1 text-xs font-semibold rounded">${b.status}</span></td>
+                        <td class="py-2 px-4 text-center">${btn}</td>
+                    </tr>`;
+            });
+        }
+
+        function confirmDeposit(id) {
+            if(confirm("Xác nhận đã thu 200.000đ cọc?")) {
+                const bookings = JSON.parse(localStorage.getItem('bookings'));
+                bookings.find(b => b.id === id).status = 'Đã xác nhận';
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                renderManagerTable(); alert("Đã xác nhận! Thông tin khách hàng đã hiện lên cho Chủ xe.");
+            }
+        }
+
+        function updateEndTime(id) {
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            const b = bookings.find(x => x.id === id);
+            const newTime = prompt("Nhập Thời gian trả xe MỚI (YYYY/MM/DD HH:mm):", b.endTime);
+            if(newTime && !isNaN(new Date(newTime).getTime())) {
+                b.endTime = newTime;
+                b.totalCost = calculateRentalDays(b.startTime, newTime) * cars.find(c => c.id === b.carId).price;
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                renderManagerTable(); alert("Đã cập nhật lại lịch và tiền thành công!");
+            }
+        }
+
+        function finishBooking(id) {
+            if(confirm("Xác nhận khách đã trả xe và hoàn tất đơn?")) {
+                const bookings = JSON.parse(localStorage.getItem('bookings'));
+                bookings.find(b => b.id === id).status = 'Đã thu hồi';
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                renderManagerTable();
+            }
+        }
+
+        window.onload = renderManagerTable;
+    </script>
+</body>
+</html>
