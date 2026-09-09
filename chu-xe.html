@@ -32,16 +32,68 @@
                 <!-- KHU VỰC 1: ĐĂNG XE MỚI -->
                 <div class="bg-white p-6 rounded-lg shadow border-t-4 border-green-500">
                     <h2 class="text-xl font-bold mb-4 text-green-700">Thêm xe mới</h2>
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <select id="newCarBrand" class="border p-2 rounded bg-white text-sm"><option value="">-- Hãng Xe --</option><option value="VinFast">VinFast</option><option value="Toyota">Toyota</option><option value="Hyundai">Hyundai</option><option value="KIA">KIA</option><option value="Mazda">Mazda</option><option value="Honda">Honda</option><option value="Ford">Ford</option></select>
-                        <input type="text" id="newCarName" placeholder="Tên xe (VD: VF 5)" class="border p-2 rounded text-sm">
-                        <select id="newCarFuel" class="border p-2 rounded bg-white text-sm"><option value="">-- Nhiên Liệu --</option><option value="Điện">Điện</option><option value="Xăng">Xăng</option><option value="Dầu Diesel">Dầu Diesel</option></select>
-                        <select id="newCarTransmission" class="border p-2 rounded bg-white text-sm"><option value="">-- Truyền Động --</option><option value="Tự Động">Tự Động</option><option value="Số Sàn">Số Sàn</option></select>
-                        <select id="newCarBodyType" class="border p-2 rounded bg-white text-sm"><option value="">-- Kiểu Dáng --</option><option value="Sedan">Sedan</option><option value="SUV gầm cao">SUV gầm cao</option><option value="Bán Tải">Bán Tải</option></select>
-                        <select id="newCarSeats" class="border p-2 rounded bg-white text-sm"><option value="">-- Chỗ Ngồi --</option><option value="4">4 chỗ</option><option value="5">5 chỗ</option><option value="7">7 chỗ</option></select>
-                        <input type="number" id="newCarPrice" placeholder="Giá/Ngày (VNĐ)" class="border p-2 rounded text-sm">
-                        <input type="text" id="newCarImage" placeholder="Link ảnh (URL)" class="border p-2 rounded text-sm">
-                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <!-- Hãng xe -->
+    <select id="newCarBrand" class="border p-2 rounded bg-white text-sm">
+        <option value="">-- Hãng Xe --</option>
+        <option value="VinFast">VinFast</option>
+        <option value="Toyota">Toyota</option>
+        <option value="Hyundai">Hyundai</option>
+        <option value="KIA">KIA</option>
+        <option value="Mazda">Mazda</option>
+        <option value="Honda">Honda</option>
+        <option value="Ford">Ford</option>
+        <option value="Mitsubishi">Mitsubishi</option>
+        <option value="Suzuki">Suzuki</option>
+        <option value="Peugeot">Peugeot</option>
+        <option value="MG">MG</option>
+    </select>
+    
+    <!-- Tên xe -->
+    <input type="text" id="newCarName" placeholder="Tên xe (VD: VF 5)" class="border p-2 rounded text-sm">
+    
+    <!-- Loại xe (Nhiên liệu) -->
+    <select id="newCarFuel" class="border p-2 rounded bg-white text-sm">
+        <option value="">-- Nhiên Liệu --</option>
+        <option value="Điện">Điện</option>
+        <option value="Xăng">Xăng</option>
+        <option value="Dầu Diesel">Dầu Diesel</option>
+        <option value="Xăng & Điện (Hybrid)">Xăng & Điện (Hybrid)</option>
+    </select>
+    
+    <!-- Truyền động -->
+    <select id="newCarTransmission" class="border p-2 rounded bg-white text-sm">
+        <option value="">-- Truyền Động --</option>
+        <option value="Tự Động">Tự Động</option>
+        <option value="Số Sàn">Số Sàn</option>
+    </select>
+    
+    <!-- Dòng xe (Kiểu dáng) -->
+    <select id="newCarBodyType" class="border p-2 rounded bg-white text-sm">
+        <option value="">-- Kiểu Dáng --</option>
+        <option value="Mini">Mini</option>
+        <option value="Sedan">Sedan</option>
+        <option value="CUV gầm cao">CUV gầm cao</option>
+        <option value="SUV gầm cao">SUV gầm cao</option>
+        <option value="MPV gầm thấp">MPV gầm thấp</option>
+        <option value="Bán Tải">Bán Tải</option>
+        <option value="Minivan">Minivan</option>
+    </select>
+    
+    <!-- Số chỗ ngồi -->
+    <select id="newCarSeats" class="border p-2 rounded bg-white text-sm">
+        <option value="">-- Chỗ Ngồi --</option>
+        <option value="4">4 chỗ</option>
+        <option value="5">5 chỗ</option>
+        <option value="6">6 chỗ</option>
+        <option value="7">7 chỗ</option>
+        <option value="9">9 chỗ</option>
+    </select>
+    
+    <!-- Giá và Ảnh -->
+    <input type="number" id="newCarPrice" placeholder="Giá/Ngày (VNĐ)" class="border p-2 rounded text-sm">
+    <input type="text" id="newCarImage" placeholder="Link ảnh (URL)" class="border p-2 rounded text-sm">
+</div>
                     <button onclick="window.addCar()" class="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 w-full">Đăng Xe Lên Mạng</button>
                 </div>
 
