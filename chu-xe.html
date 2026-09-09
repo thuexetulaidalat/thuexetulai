@@ -277,25 +277,46 @@
                 const isConfirmed = b.status === 'Đã xác nhận' || b.status === 'Đã thu hồi';
                 const phoneDisplay = isConfirmed ? `<span class="text-gray-600">${b.phone}</span>` : `<span class="text-gray-400 italic">*** Chờ cọc ***</span>`;
                 
+                // 1. XỬ LÝ ĐỊA ĐIỂM GIAO NHẬN (Thêm mới)
+                const delAdd = b.deliveryAddress ? b.deliveryAddress : 'Báo sau';
+                const retAdd = b.returnAddress ? b.returnAddress : 'Báo sau';
+                // Chỉ hiển thị địa chỉ nếu không phải là đơn "Khóa lịch"
+                const addressDisplay = b.status !== 'Đã khóa lịch' 
+                    ? `<br><span class="text-gray-600 text-xs">Giao: ${delAdd}</span><br><span class="text-gray-600 text-xs">Trả: ${retAdd}</span>` 
+                    : '';
+
+                // 2. TÍNH SỐ NGÀY THUÊ (Thêm mới)
+                const rentalDays = calculateRentalDays(b.startTime, b.endTime);
+
                 let btn = '';
                 if (b.status === 'Chờ chủ xe duyệt') {
-                    btn = `<button onclick="window.ownerApprove('${b.firebaseId}')" class="bg-blue-500 text-white px-3 py-1 rounded w-full font-bold">Duyệt cho thuê</button>`;
+                    btn = `<button onclick="window.ownerApprove('${b.firebaseId}')" class="bg-blue-500 text-white px-3 py-1 rounded w-full font-bold shadow hover:bg-blue-600">Duyệt cho thuê</button>`;
                 } else if (b.status === 'Đã khóa lịch') {
-                    // Nếu là lịch bận, cho phép chủ xe mở khóa lại
-                    btn = `<button onclick="window.unblockCar('${b.firebaseId}')" class="bg-gray-700 text-white px-3 py-1 rounded w-full font-bold hover:bg-gray-800">Mở Khóa Lịch</button>`;
+                    btn = `<button onclick="window.unblockCar('${b.firebaseId}')" class="bg-gray-700 text-white px-3 py-1 rounded w-full font-bold shadow hover:bg-gray-800">Mở Khóa Lịch</button>`;
                 } else {
-                    btn = `<span class="text-gray-500 text-sm">Đã thao tác</span>`;
+                    btn = `<span class="text-gray-500 text-sm font-semibold">Đã thao tác</span>`;
                 }
 
-                // Giao diện sẽ đổi màu vàng nếu là lịch bận
                 const rowClass = b.status === 'Đã khóa lịch' ? 'bg-yellow-50 border-b' : 'border-b hover:bg-gray-50';
 
+                // 3. CẬP NHẬT GIAO DIỆN CÁC CỘT HTML
                 tbody.innerHTML += `
                     <tr class="${rowClass}">
-                        <td class="py-3 px-4"><span class="font-bold text-blue-900">${b.carName}</span><br><span class="font-bold text-green-700">${b.customerName}</span><br>${b.status !== 'Đã khóa lịch' ? phoneDisplay : ''}</td>
-                        <td class="py-3 px-4">Lấy: ${formatDateTime(b.startTime)}<br>Trả: ${formatDateTime(b.endTime)}</td>
-                        <td class="py-3 px-4 font-bold text-red-500">${b.totalCost.toLocaleString()}đ</td>
-                        <td class="py-3 px-4"><span class="bg-gray-200 px-2 py-1 rounded text-xs font-semibold">${b.status}</span></td>
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-blue-900 text-base">${b.carName}</span><br>
+                            <span class="font-bold text-green-700">${b.customerName}</span><br>
+                            ${b.status !== 'Đã khóa lịch' ? phoneDisplay : ''}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-semibold text-gray-800">Lấy: ${formatDateTime(b.startTime)}</span><br>
+                            <span class="font-semibold text-red-600">Trả: ${formatDateTime(b.endTime)}</span>
+                            ${addressDisplay}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-indigo-600 font-bold text-sm">Số ngày: ${rentalDays}</span><br>
+                            <span class="font-bold text-red-500 text-base">${b.totalCost.toLocaleString()}đ</span>
+                        </td>
+                        <td class="py-3 px-4"><span class="bg-gray-200 px-3 py-1 rounded-full text-xs font-semibold shadow-sm">${b.status}</span></td>
                         <td class="py-3 px-4 text-center">${btn}</td>
                     </tr>`;
             });
