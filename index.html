@@ -16,6 +16,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
 
+    <!-- HỘP THOẠI NHẬP THÔNG TIN KHÁCH HÀNG -->
     <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
         <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl">
             <h3 class="font-bold text-xl mb-4 text-blue-800">Thông tin đặt xe</h3>
@@ -27,26 +28,28 @@
             <input type="text" id="returnAddress" placeholder="Địa chỉ trả xe (Có thể báo sau)" class="w-full border p-2 mb-4 rounded focus:ring-2 focus:ring-blue-400">
             
             <div class="flex justify-end gap-2">
-                <button onclick="window.closeModal()" class="bg-gray-400 text-white px-4 py-2 rounded font-bold">Hủy</button>
-                <button id="btn-submit" onclick="window.submitBooking()" class="bg-green-600 text-white px-4 py-2 rounded font-bold">Xác nhận Đặt</button>
+                <button onclick="window.closeModal()" class="bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500">Hủy</button>
+                <button id="btn-submit" onclick="window.submitBooking()" class="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700">Xác nhận Đặt</button>
             </div>
         </div>
     </div>
 
+    <!-- TIÊU ĐỀ -->
     <header class="bg-blue-600 text-white text-center p-6 shadow-md">
         <h1 class="text-3xl font-bold">Thuê Xe Tự Lái - Nhanh Chóng & Chuyên Nghiệp</h1>
         <p class="mt-2 text-blue-100">Chọn thời gian để kiểm tra xe trống và nhận báo giá</p>
     </header>
 
+    <!-- BỘ LỌC THỜI GIAN -->
     <div class="max-w-4xl mx-auto mt-6 bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-500">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-gray-700 font-bold mb-1">Thời gian nhận xe</label>
-                <input type="text" id="startTime" class="w-full border rounded p-2 bg-white" placeholder="Chọn ngày giờ...">
+                <input type="text" id="startTime" class="w-full border rounded p-2 bg-white focus:ring-2 focus:ring-blue-400" placeholder="Chọn ngày giờ...">
             </div>
             <div>
                 <label class="block text-gray-700 font-bold mb-1">Thời gian trả xe</label>
-                <input type="text" id="endTime" class="w-full border rounded p-2 bg-white" placeholder="Chọn ngày giờ...">
+                <input type="text" id="endTime" class="w-full border rounded p-2 bg-white focus:ring-2 focus:ring-blue-400" placeholder="Chọn ngày giờ...">
             </div>
         </div>
         <button onclick="window.searchAvailableCars()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">
@@ -55,53 +58,53 @@
         <p id="search-msg" class="text-red-500 text-sm mt-2 hidden text-center font-bold">Vui lòng chọn thời gian hợp lệ!</p>
     </div>
 
+    <!-- DANH SÁCH XE -->
     <div class="max-w-6xl mx-auto mt-8 px-4 pb-20">
         <h2 id="list-title" class="text-2xl font-bold text-gray-800 mb-6">Danh sách xe của chúng tôi</h2>
         <div id="car-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
 
+    <!-- NÚT LIÊN HỆ -->
     <div class="fab-container">
         <a href="https://zalo.me/0779779606" target="_blank" class="fab-icon"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Icon_of_Zalo.svg/1024px-Icon_of_Zalo.svg.png" alt="Zalo"></a>
         <a href="https://m.me/29024354103822524" target="_blank" class="fab-icon"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Facebook_Messenger_logo_2020.svg/1024px-Facebook_Messenger_logo_2020.svg.png" alt="Messenger"></a>
     </div>
 
-    <!-- KHAI BÁO TYPE="MODULE" CHO FIREBASE -->
+    <!-- MÃ LOGIC & KẾT NỐI FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+        // DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY
         const firebaseConfig = {
             apiKey: "AIzaSyBIVpGGE6zKxKkT6R7SUdgB5TLA9Dtfdlk",
             authDomain: "thuexetulai-fcd79.firebaseapp.com",
             projectId: "thuexetulai-fcd79",
             storageBucket: "thuexetulai-fcd79.firebasestorage.app",
             messagingSenderId: "984655156691",
-            appId: "1:984655156691:web:ff57df0de4f5f2ee040b26",
-            measurementId: "G-Q4RFFJ76NT"
+            appId: "1:984655156691:web:ff57df0de4f5f2ee040b26"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let globalBookings = [];
+        let dynamicCars = [];
         let isTimeSelected = false;
         let pendingCarSelection = null;
-        let dynamicCars = [];
-
-        // LẮNG NGHE DANH SÁCH XE TỪ ĐÁM MÂY (Thay thế cho danh sách cố định)
-        onSnapshot(collection(db, "cars"), (snapshot) => {
-            dynamicCars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Vẽ lại danh sách xe mỗi khi có xe mới
-            if(!isTimeSelected) window.renderCars(dynamicCars, false);
-            else window.renderCars(dynamicCars, true);
-        });
 
         const flatpickrConfig = { enableTime: true, dateFormat: "Y/m/d H:i", time_24hr: true, minuteIncrement: 30, locale: "vn" };
         flatpickr("#startTime", flatpickrConfig);
         flatpickr("#endTime", flatpickrConfig);
 
+        // LẮNG NGHE DANH SÁCH XE TỪ FIREBASE
+        onSnapshot(collection(db, "cars"), (snapshot) => {
+            dynamicCars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if(!isTimeSelected) window.renderCars(dynamicCars, false);
+            else window.renderCars(dynamicCars, true);
+        });
 
-        // LẮNG NGHE DỮ LIỆU TỪ ĐÁM MÂY
+        // LẮNG NGHE ĐƠN HÀNG ĐỂ KIỂM TRA XE BẬN
         onSnapshot(collection(db, "bookings"), (snapshot) => {
             globalBookings = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
             if (isTimeSelected) window.searchAvailableCars();
@@ -128,7 +131,8 @@
         function isCarAvailable(carId, checkStart, checkEnd) {
             const start = new Date(checkStart).getTime(); const end = new Date(checkEnd).getTime();
             for (let b of globalBookings) {
-                if (b.carId === carId && (b.status === 'Đã xác nhận' || b.status === 'Đợi cọc')) {
+                // ĐÃ THÊM ĐIỀU KIỆN "Đã khóa lịch" VÀO HÀM KIỂM TRA
+                if (b.carId === carId && (b.status === 'Đã xác nhận' || b.status === 'Đợi cọc' || b.status === 'Đã khóa lịch')) {
                     const bookedStart = new Date(b.startTime).getTime();
                     const bookedEnd = new Date(b.endTime).getTime();
                     if (start < bookedEnd && end > bookedStart) return false;
@@ -137,16 +141,7 @@
             return true;
         }
 
-        async function sendTelegramNotification(chatId, carName, total) {
-            if(chatId.includes("ĐIỀN")) return;
-            const BOT_TOKEN = "ĐIỀN_TOKEN_BOT_CỦA_BẠN";
-            const msg = `🚨 CÓ ĐƠN ĐẶT XE ${carName} MỚI!\n💰 Tổng tiền: ${total.toLocaleString()} đ\nVào web xác nhận ngay!`;
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: msg })
-            });
-        }
-
+        // HÀM HIỂN THỊ DANH SÁCH XE (ĐÃ THÊM THÔNG SỐ)
         window.renderCars = function(carArray, showStatus = false) {
             const list = document.getElementById('car-list'); list.innerHTML = '';
             const startStr = document.getElementById('startTime').value;
@@ -155,8 +150,21 @@
             carArray.forEach(car => {
                 let isAvailable = true;
                 let priceHTML = `<p class="text-gray-500 font-medium mt-2">Giá: ${car.price.toLocaleString()} đ / Ngày</p>`;
-                let buttonHTML = `<button onclick="window.openModal(${car.id})" class="mt-4 w-full bg-green-500 text-white font-bold py-2 rounded">CHỌN THUÊ XE NÀY</button>`;
+                
+                // Lưu ý bọc car.id trong dấu ngoặc kép đơn ('${car.id}') vì đây là chuỗi của Firebase
+                let buttonHTML = `<button onclick="window.openModal('${car.id}')" class="mt-4 w-full bg-green-500 text-white font-bold py-2 rounded hover:bg-green-600">CHỌN THUÊ XE NÀY</button>`;
                 let cardStyle = "";
+
+                // HTML HIỂN THỊ THÔNG SỐ (THÊM MỚI Ở ĐÂY)
+                const specsHTML = `
+                    <div class="flex flex-wrap gap-2 mt-2 text-xs font-semibold text-gray-700">
+                        <span class="bg-gray-100 px-2 py-1 rounded border">${car.brand || 'Khác'}</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded border">${car.seats || '?'} chỗ</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded border">${car.bodyType || 'Xe'}</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded border">${car.transmission || '?'}</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded border">${car.fuel || '?'}</span>
+                    </div>
+                `;
 
                 if (showStatus && isTimeSelected) {
                     isAvailable = isCarAvailable(car.id, startStr, endStr);
@@ -170,7 +178,19 @@
                         buttonHTML = `<button disabled class="mt-4 w-full bg-gray-400 text-white font-bold py-2 rounded cursor-not-allowed">ĐÃ ĐƯỢC ĐẶT</button>`;
                     }
                 }
-                list.innerHTML += `<div class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col ${cardStyle}"><img src="${car.image}" class="h-48 w-full object-cover"><div class="p-5 flex-grow flex flex-col justify-between"><div><h3 class="text-xl font-bold">${car.name}</h3>${priceHTML}</div>${buttonHTML}</div></div>`;
+
+                list.innerHTML += `
+                    <div class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition hover:shadow-xl ${cardStyle}">
+                        <img src="${car.image}" class="h-48 w-full object-cover" onerror="this.src='https://via.placeholder.com/800x400?text=Chua+Co+Anh'">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold">${car.name}</h3>
+                                ${specsHTML}
+                                ${priceHTML}
+                            </div>
+                            ${buttonHTML}
+                        </div>
+                    </div>`;
             });
         }
 
@@ -209,7 +229,6 @@
 
             if(!name || !phone) { alert("Vui lòng điền tối thiểu Tên và Số điện thoại!"); return; }
 
-            // Hiển thị trạng thái đang xử lý
             document.getElementById('btn-submit').innerText = "Đang xử lý...";
             document.getElementById('btn-submit').disabled = true;
 
@@ -218,7 +237,7 @@
             const totalCost = calculateRentalDays(startStr, endStr) * pendingCarSelection.price;
 
             const newBooking = {
-                timestamp: Date.now(), // Dùng để sắp xếp
+                timestamp: Date.now(),
                 carId: pendingCarSelection.id, 
                 carName: pendingCarSelection.name,
                 customerName: name, 
@@ -232,9 +251,7 @@
             };
 
             try {
-                // ĐẨY DỮ LIỆU LÊN ĐÁM MÂY FIREBASE
                 await addDoc(collection(db, "bookings"), newBooking);
-                sendTelegramNotification(pendingCarSelection.ownerChatId, pendingCarSelection.name, totalCost);
                 
                 document.getElementById('customerName').value = ''; document.getElementById('customerPhone').value = '';
                 document.getElementById('deliveryAddress').value = ''; document.getElementById('returnAddress').value = '';
@@ -249,8 +266,6 @@
                 document.getElementById('btn-submit').disabled = false;
             }
         }
-
-        window.renderCars(dynamicCars, false); 
     </script>
 </body>
 </html>
